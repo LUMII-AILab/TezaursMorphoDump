@@ -172,7 +172,7 @@ left join (
 select entry_id, json_agg(distinct data->'Gram'->'Flags') sense_flags
     from senses
     where data->'Gram'->'Flags' is not null
-    group by entry_id) s on (s.entry_id = e.id and l.type_id not in (4,6))
+    group by entry_id) s on (s.entry_id = e.id and l.role_id not in (4,6,9))
 """
 # TODO - filtrs uz e.release_id lai ņemtu svaigāko relīzi nevis visas. Relevants produkcijai
 
@@ -188,7 +188,7 @@ left join (
 select entry_id, json_agg(distinct data->'Gram'->'Flags') sense_flags
     from senses
     where data->'Gram'->'Flags' is not null
-    group by entry_id) s on (s.entry_id = e.id and l.type_id not in (4,6))
+    group by entry_id) s on (s.entry_id = e.id and l.role_id not in (4,6,9))
 """
 
     nesaprastie = 0
@@ -489,12 +489,12 @@ select entry_id, json_agg(distinct data->'Gram'->'Flags') sense_flags
                 flags['Persona'] = 3
 
             if flags.get('Locījums'):
-                locījumi = flags.get('Locījums')
-                if isinstance(locījumi, list):
-                    if len(locījumi) == 1:
-                        flags['Locījums'] = locījumi[0]
+                cases = flags.get('Locījums')
+                if isinstance(cases, list):
+                    if len(cases) == 1:
+                        flags['Locījums'] = cases[0]
                     else:
-                        print(f'Wordforms vajadzētu būt tikai vienam locījumam, bet {row.form} ir {str(locījumi)}')
+                        print(f'Wordforms vajadzētu būt tikai vienam locījumam, bet {row.form} ir {str(cases)}')
             
             lexeme['attributes'] = flags
             for attribute in flags:
@@ -535,6 +535,8 @@ if __name__ == "__main__":
     db_connect(latgalian=latgalian)
     dump_lexemes(filename)
     dump_attribute_stats('attributes.txt')
+    # FIXME Vai šeit vajag mēģināt šo aizstāt ar ko labāku vai arī pārkopēšanu uz reālo morfoloģiju
+    # atstāt kādam skriptam?
     if db_connection_info.get('Peteris') and not debuglist:
         filename = f'/Users/pet/Documents/NLP/morphology/src/main/resources/{filename}'
         dump_lexemes(filename)

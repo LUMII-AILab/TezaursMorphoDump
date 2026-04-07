@@ -3,6 +3,9 @@ tezaurs_lexemes.json
 tezaurs_latgalian.json
 db_config.py
 
+# PyCharm
+.idea
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

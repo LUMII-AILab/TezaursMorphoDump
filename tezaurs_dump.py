@@ -527,10 +527,10 @@ def dump_attribute_stats(filename):
 
 if __name__ == "__main__":
     latgalian = False
-    filename = 'tezaurs_lexemes.json'
+    filename = 'tezaurs_lexemes.jsonl'
     if len(sys.argv) > 1 and sys.argv[1].lower() == 'latgalian':
         latgalian = True
-        filename = 'tezaurs_latgalian.json'
+        filename = 'tezaurs_latgalian.jsonl'
 
     db_connect(latgalian=latgalian)
     dump_lexemes(filename)

@@ -5,17 +5,21 @@ import psycopg
 import psycopg.rows
 import json
 import sys
+from datetime import datetime
 from collections import Counter
 from copy import deepcopy
 
 connection = None
 attribute_stats = Counter()
+dbname = None
+is_release = False
+warn_on_sr = False
 
 debuglist = set()
 # debuglist = set(['nekas'])
 
 def db_connect(latgalian = False):
-    global connection
+    global connection, dbname
 
     if db_connection_info is None or db_connection_info["host"] is None or len(db_connection_info["host"]) == 0:
         print("Postgres connection error: connection information must be supplied in db_config")
@@ -36,7 +40,6 @@ def db_connect(latgalian = False):
             options=f'-c search_path={schema}',
             row_factory=psycopg.rows.namedtuple_row
         )
-
 
 def query(sql, parameters):
     global connection
@@ -353,7 +356,7 @@ select entry_id, json_agg(distinct data->'Gram'->'Flags') sense_flags
                         del gram['StructuralRestrictions']
                         if gram.get('Divdabja veids'):
                             del gram['Divdabja veids']
-                    else:
+                    elif warn_on_sr:
                         print(f'Nesaprasts SR: {sr} {row.lemma}')
                         nesaprastie += 1
 
@@ -370,7 +373,7 @@ select entry_id, json_agg(distinct data->'Gram'->'Flags') sense_flags
                     gram['Darbības vārda tips'].append("Palīgverbs 'būt'")
 
                 if dati.get('Pronunciations'):
-                    gram['pronunciations'] = dati['Pronunciations']
+                    gram['Izruna'] = dati['Pronunciations']
                     del dati['Pronunciations']
 
                 if dati and (not gram or len(dati) != 1):
@@ -455,6 +458,9 @@ select entry_id, json_agg(distinct data->'Gram'->'Flags') sense_flags
         if row.w_data:
             dati = deepcopy(row.w_data)
             gram = dati.get('Gram')
+            if dati.get('Pronunciations'):
+                gram['Flags']['Izruna'] = dati['Pronunciations']
+                del dati['Pronunciations']
             if gram and gram.get('Flags'):
                 flatFlags = {k: "|".join(v) if isinstance(v, list) and k not in ('Darbības vārda tips', 'Vietniekvārda tips') else v for k, v in
                         gram.get('Flags').items()}
@@ -511,8 +517,13 @@ select entry_id, json_agg(distinct data->'Gram'->'Flags') sense_flags
         else:
             yield lexeme  # Šis principā ir defaultais vienīgais galvenais yieldotājs normālajam gadījumam
 
-def dump_lexemes(filename):
+
+def dump_lexemes(filename, metadata):
     with open(filename, 'w', encoding='utf-8') as f:
+        if metadata:
+            f.write(json.dumps(metadata, ensure_ascii=False))
+            f.write('\n')
+            f.write('\n')
         for lexeme in fetch_lexemes():
             f.write(json.dumps(lexeme, ensure_ascii=False))
             f.write('\n')
@@ -525,6 +536,21 @@ def dump_attribute_stats(filename):
             print(attribute, count)
             f.write(f'{attribute}\t{count}\n')
 
+
+def form_metadata():
+    if is_release:
+        cursor = connection.cursor(row_factory=psycopg.rows.dict_row)
+        sql_dict_properties = "SELECT release_timestamp, info->'tag' #>> '{}' as tag FROM metadata"
+        cursor.execute(sql_dict_properties)
+        db_row = cursor.fetchone()
+        if not db_row:
+            return {'what': dbname, 'when': str(datetime.now())}
+        return {
+            'what': db_row['tag'],
+            'when': str(db_row['release_timestamp'])}
+    else:
+        return {'what': dbname, 'when': str(datetime.now())}
+
 if __name__ == "__main__":
     latgalian = False
     filename = 'tezaurs_lexemes.jsonl'
@@ -533,11 +559,12 @@ if __name__ == "__main__":
         filename = 'tezaurs_latgalian.jsonl'
 
     db_connect(latgalian=latgalian)
-    dump_lexemes(filename)
+
+    dump_lexemes(filename, form_metadata())
     dump_attribute_stats('attributes.txt')
     # FIXME Vai šeit vajag mēģināt šo aizstāt ar ko labāku vai arī pārkopēšanu uz reālo morfoloģiju
     # atstāt kādam skriptam?
-    if db_connection_info.get('Peteris') and not debuglist:
-        filename = f'/Users/pet/Documents/NLP/morphology/src/main/resources/{filename}'
-        dump_lexemes(filename)
+    #if db_connection_info.get('Peteris') and not debuglist:
+    #    filename = f'/Users/pet/Documents/NLP/morphology/src/main/resources/{filename}'
+    #    dump_lexemes(filename)
     print(f'Done! Output written to {filename}')

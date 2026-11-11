@@ -367,10 +367,11 @@ select entry_id, json_agg(distinct data->'Gram'->'Flags') sense_flags
                 if row.paradigm_name.startswith('verb') or (gram and gram.get('Vārdšķira') == 'Darbības vārds'):
                     default_verb_flag = 'Patstāvīgs darbības vārds'
                 gram, alt_verb_types = collect_flag_options(gram, row, 'Darbības vārda tips', default_verb_flag)
-                if row.lemma == 'būt' and 'Palīgverbs' in gram['Darbības vārda tips']:
-                    gram['Darbības vārda tips'].remove('Palīgverbs')
-                    gram['Darbības vārda tips'].remove('Saitiņa')
-                    gram['Darbības vārda tips'].append("Palīgverbs 'būt'")
+                # From Tagset 2027 "būt" is not special anymore, it is supposed to have 'Palīgverbs' and 'Saitiņa'
+                #if row.lemma == 'būt' and 'Palīgverbs' in gram['Darbības vārda tips']:
+                    #gram['Darbības vārda tips'].remove('Palīgverbs')
+                    #gram['Darbības vārda tips'].remove('Saitiņa')
+                    #gram['Darbības vārda tips'].append("Palīgverbs 'būt'")
 
                 if dati.get('Pronunciations'):
                     gram['Izruna'] = dati['Pronunciations']
@@ -477,10 +478,11 @@ select entry_id, json_agg(distinct data->'Gram'->'Flags') sense_flags
             if row.paradigm_name.startswith('verb') or (flags and flags.get('Vārdšķira') == 'Darbības vārds'):
                 default_verb_flag = 'Patstāvīgs darbības vārds'
             gram, alt_verb_types = collect_flag_options(flags, row, 'Darbības vārda tips', default_verb_flag)
-            if row.lemma == 'būt' and 'Palīgverbs' in flags['Darbības vārda tips']:
-                flags['Darbības vārda tips'].remove('Palīgverbs')
-                flags['Darbības vārda tips'].remove('Saitiņa')
-                flags['Darbības vārda tips'].append("Palīgverbs 'būt'")
+            # From Tagset 2027 "būt" is not special anymore, it is supposed to have 'Palīgverbs' and 'Saitiņa'
+            #if row.lemma == 'būt' and 'Palīgverbs' in flags['Darbības vārda tips']:
+            #    flags['Darbības vārda tips'].remove('Palīgverbs')
+            #    flags['Darbības vārda tips'].remove('Saitiņa')
+            #    flags['Darbības vārda tips'].append("Palīgverbs 'būt'")
 
             for key in dict(flags):
                 value = flags[key]
